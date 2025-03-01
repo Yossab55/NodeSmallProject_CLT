@@ -1,56 +1,59 @@
 const fs = require("fs");
+const collectionConnection = require("./db");
 const path = "./test.json";
-
-let loadTask = () => {
+let loadTask = async () => {
   try {
-    return JSON.parse(fs.readFileSync(path));
+    let collection = await collectionConnection('tododList');
+    let tasks = await collection.find({});
+    return tasks;
   } catch {
     return [];
   }
 };
 
-let saveTasks = (tasks) => {
-  fs.writeFileSync(path, JSON.stringify(tasks));
+let saveTasks = async (tasks) => {
+  let collection = await collectionConnection('tododList');
+  collection.insertMany(tasks);
 };
 
-let addTask = (task) => {
-  let tasks = loadTask();
-  tasks.push({ task, completed: false });
-  saveTasks(tasks);
+let addTask = async (task) => {
+  await saveTasks([{ task, completed: false }]);
   console.log("task added successfully");
 };
 
-let listTask = () => {
-  let tasks = loadTask();
+let listTask = async () => {
+  let tasks = await loadTask();
   if (tasks.length == 0) {
     console.log("There is no tasks");
   } else {
     console.log("Your tasks :");
     tasks.forEach((element, index) => {
       console.log(
-        `${index + 1}- ${element.task}, statues: ${element.completed ? "✅ done" : "⌛ pending"}`
+        `${index + 1}- ${element.task}, statues: ${
+          element.completed ? "✅ done" : "⌛ pending"
+        }`
       );
     });
   }
 };
 
-let completeTask = (index) => {
-  let tasks = loadTask();
-  if (index == null) return; 
+let completeTask = async (index) => {
+  if (index == null) return;
+  let tasks = await loadTask();
   index = Number(index);
   if (index > tasks.length) {
     console.log("your task's number is higher than task's list");
     console.log("please choose correct number");
     return;
   }
-    tasks[index -1].completed = true;
-    saveTasks(tasks);
+  tasks[index - 1].completed = true;
+  await saveTasks(tasks);
+  console.log("task updated successfully")
 };
 
-let deleteTask = (index) => {
-  
-  let tasks = loadTask();
-  if(index == null) return ;
+let deleteTask = async (index) => {
+  if (index == null) return;
+  let tasks = await loadTask();
   index = Number(index);
   if (index > tasks.length) {
     console.log("your task's number is higher than task's list");
@@ -58,39 +61,41 @@ let deleteTask = (index) => {
     return;
   }
   tasks = tasks.slice(0, index).concat(tasks.slice(index + 1));
-  saveTasks(tasks);
+  await saveTasks(tasks);
+  console.log("task are deleted");
 };
 
-let deleteAll = () => {
-  fs.writeFileSync(path, "");
-}
+let deleteAll = async () => {
+  let collection = collectionConnection('tododList');
+  await collection.deleteMany({});
+  console.log("all records are deleted successfully")
+};
 
 const command = process.argv[2];
 const argument = process.argv[3];
 
-switch(command) {
-  case 'commands': 
+switch (command) {
+  case "commands":
     showCommand();
-  break;
-  case 'list': 
+    break;
+  case "list":
     listTask();
-  break;
-  case 'add': 
+    break;
+  case "add":
     addTask(argument);
-  break;
-  case 'complete': 
+    break;
+  case "complete":
     completeTask(argument);
-  break;
-  case 'delete': 
+    break;
+  case "delete":
     deleteTask(argument);
-  break;
-  case 'deleteAll': 
+    break;
+  case "deleteAll":
     deleteAll(argument);
-  break;
-  default: 
+    break;
+  default:
     console.log(`there's no such command like ${command}`);
     showCommand();
-
 }
 function showCommand() {
   console.log(
@@ -101,5 +106,5 @@ function showCommand() {
     4- complete
     5- delete
     6- deleteAll`
-  )
+  );
 }
