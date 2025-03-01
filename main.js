@@ -1,10 +1,11 @@
 const fs = require("fs");
-const collectionConnection = require("./db");
-const path = "./test.json";
+const { collectionConnection, closeDB } = require("./db");
+// const path = "./test.json";
 let loadTask = async () => {
   try {
-    let collection = await collectionConnection('tododList');
-    let tasks = await collection.find({});
+    let collection = await collectionConnection("tododList");
+    let tasks = await collection.find({}).toArray();
+    await closeDB();
     return tasks;
   } catch {
     return [];
@@ -12,13 +13,15 @@ let loadTask = async () => {
 };
 
 let saveTasks = async (tasks) => {
-  let collection = await collectionConnection('tododList');
+  let collection = await collectionConnection("tododList");
   collection.insertMany(tasks);
+  await closeDB();
 };
 
 let addTask = async (task) => {
   await saveTasks([{ task, completed: false }]);
   console.log("task added successfully");
+  await closeDB();
 };
 
 let listTask = async () => {
@@ -48,7 +51,7 @@ let completeTask = async (index) => {
   }
   tasks[index - 1].completed = true;
   await saveTasks(tasks);
-  console.log("task updated successfully")
+  console.log("task updated successfully");
 };
 
 let deleteTask = async (index) => {
@@ -66,9 +69,9 @@ let deleteTask = async (index) => {
 };
 
 let deleteAll = async () => {
-  let collection = collectionConnection('tododList');
+  let collection = collectionConnection("tododList");
   await collection.deleteMany({});
-  console.log("all records are deleted successfully")
+  console.log("all records are deleted successfully");
 };
 
 const command = process.argv[2];
